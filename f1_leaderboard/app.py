@@ -92,10 +92,19 @@ def main() -> int:
                 f"compound={p.visual_compound} wear={p.tyre_wear_avg:.1f}%"
                 if p else "no player"
             )
+            sec_info = (
+                f"lap={p.current_lap} sec_idx={p.current_sector} "
+                f"inv={p.current_lap_invalid} pit={p.pit_status} "
+                f"status={p.sector_status} "
+                f"cur=({p.current_lap_s1_ms},{p.current_lap_s2_ms}) "
+                f"pb=({p.pb_s1_ms},{p.pb_s2_ms},{p.pb_s3_ms}) "
+                f"ob=({snap.overall_best_s1_ms},{snap.overall_best_s2_ms},{snap.overall_best_s3_ms})"
+                if p else ""
+            )
             log.info(
-                "recv=%d parsed=%d | pos>0=%d named=%d | player[%d] %s",
+                "recv=%d parsed=%d | pos>0=%d named=%d | player[%d] %s | %s",
                 stats["recv"], stats["parsed"],
-                with_pos, with_name, pidx, ers_info,
+                with_pos, with_name, pidx, ers_info, sec_info,
             )
     except KeyboardInterrupt:
         _shutdown()

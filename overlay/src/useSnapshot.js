@@ -55,6 +55,10 @@ export function useSnapshot() {
         try { msg = JSON.parse(event.data); } catch { return; }
         if (msg.type === 'full') applyFull(msg.data);
         else if (msg.type === 'diff') applyDiff(msg.data);
+        else if (msg.type === 'inactive') {
+          driversMapRef.current = new Map();
+          setState({ connected: true, drivers: [], playerIdx: -1 });
+        }
       };
 
       ws.onclose = () => {

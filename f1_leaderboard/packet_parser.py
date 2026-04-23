@@ -109,6 +109,8 @@ LAPDATA_PER_CAR = 57
 _LAPDATA_FIELDS = struct.Struct("<BBBBBBB")  # @32..@38, 7 uint8
 # F1 24+ böldü: deltaToCarInFront = u16 ms + u8 minutes @14..@16
 _LAPDATA_DELTA_FIELDS = struct.Struct("<HB")
+# lastLapTime u32 @0 + currentLapTime u32 @4 + s1 u16+u8 @8 + s2 u16+u8 @11
+_LAPDATA_TIMES = struct.Struct("<IIHBHB")
 
 
 @dataclass(frozen=True)
@@ -120,7 +122,10 @@ class LapEntry:
     sector: int
     current_lap_invalid: int
     penalties: int         # saniye
-    delta_to_car_in_front_ms: int  # toplam ms; 0 = lider / bilinmiyor
+    delta_to_car_in_front_ms: int
+    last_lap_time_ms: int          # önceki turun toplam süresi (ms)
+    sector1_time_ms: int           # bu turun S1 süresi (0 = henüz tamamlanmadı)
+    sector2_time_ms: int           # bu turun S2 süresi (0 = henüz tamamlanmadı)
 
 
 @dataclass(frozen=True)
@@ -136,10 +141,20 @@ def parse_lap_data(body: bytes) -> Optional[LapDataPacket]:
     try:
         for i in range(NUM_CARS):
             base = i * LAPDATA_PER_CAR
+            (last_lap_ms, _curr_lap_ms,
+             s1_ms_part, s1_min, s2_ms_part, s2_min) = _LAPDATA_TIMES.unpack_from(body, base)
+            s1_total_ms = s1_min * 60_000 + s1_ms_part
+            s2_total_ms = s2_min * 60_000 + s2_ms_part
             delta_ms_part, delta_min = _LAPDATA_DELTA_FIELDS.unpack_from(body, base + 14)
             delta_total_ms = delta_min * 60_000 + delta_ms_part
             fields = _LAPDATA_FIELDS.unpack_from(body, base + 32)
-            entries.append(LapEntry(*fields, delta_to_car_in_front_ms=delta_total_ms))
+            entries.append(LapEntry(
+                *fields,
+                delta_to_car_in_front_ms=delta_total_ms,
+                last_lap_time_ms=last_lap_ms,
+                sector1_time_ms=s1_total_ms,
+                sector2_time_ms=s2_total_ms,
+            ))
     except struct.error:
         return None
     return LapDataPacket(entries)

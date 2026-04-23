@@ -47,11 +47,8 @@ def _format_gap(delta_ms: Optional[int], position: int) -> str:
     return f'+{seconds:.3f}'
 
 
-def _sector_status(current_sector: int) -> List[int]:
-    out = [0, 0, 0]
-    for i in range(min(3, max(0, current_sector))):
-        out[i] = 1
-    return out
+def _sector_status_list(d: Driver) -> List[int]:
+    return list(d.sector_status)
 
 
 def _driver_dict(d: Driver, player_idx: int, teams_cfg: Dict[str, dict]) -> dict:
@@ -65,7 +62,7 @@ def _driver_dict(d: Driver, player_idx: int, teams_cfg: Dict[str, dict]) -> dict
         'team': TEAM_ID_TO_CODE.get(d.team_id, 'APX'),
         'teamId': d.team_id,
         'teamColor': team_color,
-        'sectors': _sector_status(d.current_sector),
+        'sectors': _sector_status_list(d),
         'gap': _format_gap(d.delta_to_ahead_ms, d.position),
         'compound': COMPOUND_MAP.get(d.visual_compound, 'S'),
         'wear': round(d.tyre_wear_avg, 1),

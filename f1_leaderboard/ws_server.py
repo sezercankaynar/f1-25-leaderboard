@@ -40,6 +40,7 @@ class WsServer:
         self._thread: Optional[threading.Thread] = None
         self._stop_event: Optional[asyncio.Event] = None
         self._last_payload: Optional[dict] = None
+        self._was_active: bool = False
 
     def start(self) -> None:
         self._thread = threading.Thread(
@@ -75,10 +76,12 @@ class WsServer:
         self._clients.add(ws)
         log.info("WS client connected (total=%d)", len(self._clients))
         try:
-            if self._last_payload is not None:
+            if self._store.is_game_active() and self._last_payload is not None:
                 await ws.send(json.dumps(
                     {'type': 'full', 'data': self._last_payload}
                 ))
+            else:
+                await ws.send(json.dumps({'type': 'inactive'}))
             await ws.wait_closed()
         finally:
             self._clients.discard(ws)
@@ -88,9 +91,21 @@ class WsServer:
         while True:
             await asyncio.sleep(BROADCAST_INTERVAL)
             try:
+                active = self._store.is_game_active()
+                if not active:
+                    if self._was_active:
+                        # aktif → inaktif geçişi: frontend'e bildir, full reset
+                        self._was_active = False
+                        self._last_payload = None
+                        await self._send_to_all(json.dumps({'type': 'inactive'}))
+                    continue
+                # Aktif
+                was = self._was_active
+                self._was_active = True
                 snap = self._store.snapshot()
                 payload = snapshot_to_payload(snap, self._teams_cfg)
-                if self._last_payload is None:
+                if not was or self._last_payload is None:
+                    # inaktif → aktif geçişi, veya ilk payload: full gönder
                     msg = json.dumps({'type': 'full', 'data': payload})
                     self._last_payload = payload
                 else:
@@ -99,11 +114,14 @@ class WsServer:
                         continue
                     msg = json.dumps({'type': 'diff', 'data': diff})
                     self._last_payload = payload
-                if not self._clients:
-                    continue
-                await asyncio.gather(
-                    *(c.send(msg) for c in list(self._clients)),
-                    return_exceptions=True,
-                )
+                await self._send_to_all(msg)
             except Exception as exc:
                 log.exception("broadcast error: %s", exc)
+
+    async def _send_to_all(self, msg: str) -> None:
+        if not self._clients:
+            return
+        await asyncio.gather(
+            *(c.send(msg) for c in list(self._clients)),
+            return_exceptions=True,
+        )
