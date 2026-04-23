@@ -1,0 +1,16 @@
+{
+  "font_family": "Titillium Web",
+  "font_fallback": "Arial",
+  "background_color": "#05080C",
+  "background_alpha": 0.94,
+  "row_alt_alpha": 0.06,
+  "divider_color": "#182030",
+  "top_accent_color": "#FFCC00",
+  "text_primary": "#FFFFFF",
+  "text_secondary": "#8A96A6",
+  "player_highlight": "#FFEB3B",
+  "pit_highlight": "#FF9800",
+  "ers_colors": ["#8B5FBF"],
+  "wear_thresholds": [30, 60, 85],
+  "wear_colors": ["#4CAF50", "#FFC107", "#FF9800", "#F44336"]
+}

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<title>F1 25 Leaderboard — Design Explorations</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #0A0A0E; color: #ECECEC;
+    font-family: 'Rajdhani', sans-serif; }
+  * { box-sizing: border-box; }
+
+  @keyframes lbDeltaPulse {
+    0%   { opacity: 0; transform: scale(0.6); }
+    15%  { opacity: 1; transform: scale(1.15); }
+    30%  { transform: scale(1); }
+    85%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* shared artboard background — simulates on-screen overlay context */
+  .race-bg {
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(225,29,46,0.08), transparent 60%),
+      radial-gradient(ellipse at 80% 70%, rgba(30,91,255,0.08), transparent 55%),
+      linear-gradient(180deg, #1a1a22 0%, #0a0a0e 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 24px;
+  }
+
+  /* subtle scanline overlay for that broadcast feel */
+  .race-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  /* tweaks panel */
+  .tweaks {
+    position: fixed;
+    right: 18px; bottom: 18px;
+    width: 260px;
+    background: rgba(18,18,24,0.96);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: #ECECEC;
+    font-family: 'Rajdhani', sans-serif;
+    z-index: 100;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    display: none;
+  }
+  .tweaks.visible { display: block; }
+  .tweaks h4 {
+    margin: 0 0 10px 0;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #ECECEC;
+  }
+  .tweak-row {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; margin: 8px 0;
+    font-size: 13px;
+  }
+  .tweak-row label {
+    font-weight: 600; color: #9AA0A6;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    font-size: 11px;
+  }
+  .tweak-row input[type=range] { flex: 1; }
+  .tweak-row select {
+    background: #0b0b0f; color: #ECECEC;
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 3px 6px; border-radius: 3px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tweak-btn {
+    width: 100%;
+    background: #E11D2E; color: #FFF; border: 0;
+    padding: 8px; border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .tweak-btn:hover { background: #C81028; }
+  .tweak-btn.secondary { background: #2A2A32; }
+  .tweak-btn.secondary:hover { background: #3A3A42; }
+</style>
+
+<!-- Default tweak values, rewritten by the host when edits are persisted -->
+<script>
+  window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "width": 360,
+    "density": "cozy",
+    "opacity": 0.8,
+    "autoShuffle": true
+  }/*EDITMODE-END*/;
+</script>
+</head>
+
+<body>
+
+<div id="canvas-root"></div>
+
+<div class="tweaks" id="tweaks">
+  <h4>Tweaks</h4>
+  <div class="tweak-row">
+    <label>Width</label>
+    <input type="range" id="t-width" min="280" max="460" step="10" />
+    <span id="t-width-val" style="width:38px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">360</span>
+  </div>
+  <div class="tweak-row">
+    <label>Density</label>
+    <select id="t-density">
+      <option value="cozy">Cozy</option>
+      <option value="compact">Compact</option>
+    </select>
+  </div>
+  <div class="tweak-row">
+    <label>Opacity</label>
+    <input type="range" id="t-opacity" min="0.4" max="1" step="0.02" />
+    <span id="t-opacity-val" style="width:38px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">0.86</span>
+  </div>
+  <button class="tweak-btn" id="t-shuffle">Simulate Position Change</button>
+  <button class="tweak-btn secondary" id="t-autoshuffle">Auto-shuffle: ON</button>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="flip-list.jsx"></script>
+<script type="text/babel" src="atoms.jsx"></script>
+<script type="text/babel" src="variant-classic.jsx"></script>
+<script type="text/babel" src="variant-boldbar.jsx"></script>
+<script type="text/babel" src="variant-minimal.jsx"></script>
+
+<script>
+  // ----- Tweaks wiring -----
+  const t = window.TWEAK_DEFAULTS;
+  const tweaksEl = document.getElementById('tweaks');
+  const wEl = document.getElementById('t-width');
+  const wVal = document.getElementById('t-width-val');
+  const dEl = document.getElementById('t-density');
+  const oEl = document.getElementById('t-opacity');
+  const oVal = document.getElementById('t-opacity-val');
+  const shuffleBtn = document.getElementById('t-shuffle');
+  const autoBtn = document.getElementById('t-autoshuffle');
+
+  wEl.value = t.width; wVal.textContent = t.width;
+  dEl.value = t.density;
+  oEl.value = t.opacity; oVal.textContent = t.opacity;
+  autoBtn.textContent = 'Auto-shuffle: ' + (t.autoShuffle ? 'ON' : 'OFF');
+
+  // Register listener FIRST, then announce availability.
+  window.addEventListener('message', (e) => {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === '__activate_edit_mode') tweaksEl.classList.add('visible');
+    if (e.data.type === '__deactivate_edit_mode') tweaksEl.classList.remove('visible');
+  });
+  window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+  function persist(edits) {
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+  }
+
+  // Dispatch helper — App listens for a custom event to pick up live edits.
+  function bus(name, detail) { window.dispatchEvent(new CustomEvent(name, { detail })); }
+
+  wEl.addEventListener('input', () => {
+    const v = +wEl.value; wVal.textContent = v;
+    bus('lb:tweak', { width: v });
+    persist({ width: v });
+  });
+  dEl.addEventListener('change', () => {
+    bus('lb:tweak', { density: dEl.value });
+    persist({ density: dEl.value });
+  });
+  oEl.addEventListener('input', () => {
+    const v = +oEl.value; oVal.textContent = v.toFixed(2);
+    bus('lb:tweak', { opacity: v });
+    persist({ opacity: v });
+  });
+  shuffleBtn.addEventListener('click', () => bus('lb:shuffle'));
+  autoBtn.addEventListener('click', () => {
+    const now = autoBtn.textContent.includes('ON');
+    const next = !now;
+    autoBtn.textContent = 'Auto-shuffle: ' + (next ? 'ON' : 'OFF');
+    bus('lb:tweak', { autoShuffle: next });
+    persist({ autoShuffle: next });
+  });
+
+  // wire tweak events into React state via a small bridge component re-render:
+  // We re-render the App with refreshed tweak values. Simplest approach —
+  // swap the App's state through a global hook.
+</script>
+
+<script type="text/babel">
+  // Replace the App above with a tweak-aware one that listens for lb:tweak + lb:shuffle.
+  // (We re-mount so event wiring is clean and simple.)
+  const { useState, useEffect } = React;
+
+  function recomputePositions2(drivers) {
+    return drivers.map((d, i) => {
+      if (i === 0) return { ...d, pos: 1, gap: 'LEADER' };
+      const base = d.gap === 'LEADER' ? ('+0.' + (100 + Math.floor(Math.random()*900))) : d.gap;
+      return { ...d, pos: i + 1, gap: base.startsWith('+') ? base : '+' + base };
+    });
+  }
+  function shuffle2(drivers) {
+    const arr = drivers.slice();
+    const swaps = 1 + Math.floor(Math.random() * 2);
+    for (let s = 0; s < swaps; s++) {
+      const i = Math.floor(Math.random() * (arr.length - 1));
+      [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+    }
+    return recomputePositions2(arr);
+  }
+
+  function App2() {
+    const t = window.TWEAK_DEFAULTS;
+    const [width, setWidth] = useState(t.width);
+    const [density, setDensity] = useState(t.density);
+    const [opacity, setOpacity] = useState(t.opacity);
+    const [autoShuffle, setAutoShuffle] = useState(t.autoShuffle);
+    const [drivers, setDrivers] = useState(window.DRIVERS);
+
+    useEffect(() => {
+      const onTweak = (e) => {
+        const d = e.detail || {};
+        if (d.width != null) setWidth(d.width);
+        if (d.density != null) setDensity(d.density);
+        if (d.opacity != null) setOpacity(d.opacity);
+        if (d.autoShuffle != null) setAutoShuffle(d.autoShuffle);
+      };
+      const onShuffle = () => setDrivers(dr => shuffle2(dr));
+      window.addEventListener('lb:tweak', onTweak);
+      window.addEventListener('lb:shuffle', onShuffle);
+      return () => {
+        window.removeEventListener('lb:tweak', onTweak);
+        window.removeEventListener('lb:shuffle', onShuffle);
+      };
+    }, []);
+
+    useEffect(() => {
+      if (!autoShuffle) return;
+      const id = setInterval(() => setDrivers(dr => shuffle2(dr)), 2800);
+      return () => clearInterval(id);
+    }, [autoShuffle]);
+
+    return (
+      <DesignCanvas
+        title="F1 25 Leaderboard — Modern Overlay Tasarımları"
+        subtitle="3 varyasyon · referans: broadcast tower · UDP telemetry uyumlu"
+      >
+        <DCSection id="s1" title="01 · Classic Broadcast" subtitle="Referansa sadık, modernleştirilmiş. Takım rengi sol kenarda dikey şerit.">
+          <DCArtboard id="classic" label="Classic Broadcast" width={Math.max(width + 48, 380)} height={660}>
+            <div className="race-bg" style={{position:'relative', opacity: 1}}>
+              <div style={{opacity}}>
+                <window.VariantClassic drivers={drivers} width={width} density={density} />
+              </div>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="s2" title="02 · Bold Bar" subtitle="Daha güçlü tipografi, pozisyon bloğu altında takım rengi şeridi. Broadcast TV hissi en yüksek.">
+          <DCArtboard id="boldbar" label="Bold Bar" width={Math.max(width + 48, 380)} height={740}>
+            <div className="race-bg" style={{position:'relative'}}>
+              <div style={{opacity}}>
+                <window.VariantBoldBar drivers={drivers} width={width} density={density} />
+              </div>
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="s3" title="03 · Minimal Split" subtitle="Tipografi odaklı, sade. Takım rengi sadece 2px'lik bir hairline.">
+          <DCArtboard id="minimal" label="Minimal Split" width={Math.max(width + 48, 380)} height={620}>
+            <div className="race-bg" style={{position:'relative'}}>
+              <div style={{opacity}}>
+                <window.VariantMinimal drivers={drivers} width={width} density={density} />
+              </div>
+            </div>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  // Replace previous render
+  ReactDOM.createRoot(document.getElementById('canvas-root')).render(<App2 />);
+</script>
+
+</body>
+</html>

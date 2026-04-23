@@ -1,0 +1,8 @@
+{
+  "_comment": "UDP visualTyreCompound enum → rozet harfi + renk. Araştırma fazında F1 25 spec ile doğrulanacak.",
+  "16": { "code": "S", "name": "Soft",         "bg": "#E53935", "fg": "#FFFFFF" },
+  "17": { "code": "M", "name": "Medium",       "bg": "#FDD835", "fg": "#000000" },
+  "18": { "code": "H", "name": "Hard",         "bg": "#FAFAFA", "fg": "#000000" },
+  "7":  { "code": "I", "name": "Intermediate", "bg": "#00C853", "fg": "#FFFFFF" },
+  "8":  { "code": "W", "name": "Wet",          "bg": "#1E88E5", "fg": "#FFFFFF" }
+}

@@ -1,0 +1,28 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Rajdhani', 'Oswald', 'Segoe UI', sans-serif;
+  color: #ECECEC;
+  user-select: none;
+  -webkit-user-select: none;
+}
+* { box-sizing: border-box; }
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 8px;
+}
+
+@keyframes lbDeltaPulse {
+  0%   { opacity: 0; transform: scale(0.6); }
+  15%  { opacity: 1; transform: scale(1.15); }
+  30%  { transform: scale(1); }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}

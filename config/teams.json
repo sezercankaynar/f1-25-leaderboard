@@ -1,0 +1,13 @@
+{
+  "_comment": "2025 grid — renkler araştırma fazında resmi livery'lere göre doğrulanacak. logo_path F4'te eklendi (2026-04-22), formula1.com CDN'den 2025 sezonu beyaz logoları, 64x64 şeffaf PNG.",
+  "0":  { "name": "Mercedes",     "color": "#00D2BE", "short": "MER", "logo_path": "config/assets/teams/0.png" },
+  "1":  { "name": "Ferrari",      "color": "#DC0000", "short": "FER", "logo_path": "config/assets/teams/1.png" },
+  "2":  { "name": "Red Bull",     "color": "#0600EF", "short": "RBR", "logo_path": "config/assets/teams/2.png" },
+  "3":  { "name": "Williams",     "color": "#00A0DE", "short": "WIL", "logo_path": "config/assets/teams/3.png" },
+  "4":  { "name": "Aston Martin", "color": "#006F62", "short": "AST", "logo_path": "config/assets/teams/4.png" },
+  "5":  { "name": "Alpine",       "color": "#0090FF", "short": "ALP", "logo_path": "config/assets/teams/5.png" },
+  "6":  { "name": "RB",           "color": "#1660AD", "short": "VCB", "logo_path": "config/assets/teams/6.png" },
+  "7":  { "name": "Haas",         "color": "#B6BABD", "short": "HAA", "logo_path": "config/assets/teams/7.png" },
+  "8":  { "name": "McLaren",      "color": "#FF8700", "short": "MCL", "logo_path": "config/assets/teams/8.png" },
+  "9":  { "name": "Kick Sauber",  "color": "#52E252", "short": "KCK", "logo_path": "config/assets/teams/9.png" }
+}

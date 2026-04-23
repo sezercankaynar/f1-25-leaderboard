@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+logs/
+captures/
+*.log
+.pytest_cache/
+.vscode/
+.idea/
+*.egg-info/
+dist/
+build/
+
+# Node.js / Electron
+node_modules/
+overlay/dist/
+overlay/.vite/
+
+# İteratif oyun içi ekran görüntüleri (v1..v7 görsel iterasyon döngüsü)
+ingame.png
+ingame_v*.png
+ferrari_logo.png
+*.webp
+
+# Design bundle binary archive (çıkarılmış içerik tutuluyor)
+design_bundle/bundle
+design_bundle/bundle.gz
+
+# Claude oturum durumu
+.claude/
