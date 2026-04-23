@@ -8,13 +8,15 @@
     "dev": "concurrently -k -n vite,electron -c magenta,cyan \"npm:dev:vite\" \"npm:dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on tcp:5173 && electron .",
-    "build": "vite build"
+    "build": "vite build",
+    "pack": "vite build && electron-packager . F1-25-Leaderboard-Overlay --platform=win32 --arch=x64 --out=release --overwrite --ignore=\"^/release($|/)\""
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electron/packager": "^20.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.0",
     "electron": "^32.2.5",

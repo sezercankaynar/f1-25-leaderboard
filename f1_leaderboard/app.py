@@ -22,7 +22,16 @@ from .ws_server import WsServer
 
 log = logging.getLogger(__name__)
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+
+def _resolve_config_dir() -> Path:
+    """PyInstaller ile paketlenmiş exe'de config/ exe'nin yanında olur;
+    dev'de proje kök dizininde. sys.frozen True iken sys.executable kullan."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "config"
+    return Path(__file__).resolve().parent.parent / "config"
+
+
+CONFIG_DIR = _resolve_config_dir()
 
 
 def _load_teams() -> dict:

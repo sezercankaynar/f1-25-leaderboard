@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: overlay/package-lock.json
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Install Node deps
+        working-directory: overlay
+        run: npm ci
+
+      - name: Build Python backend (PyInstaller)
+        run: |
+          pyinstaller --onefile --name f1-leaderboard-backend `
+            --distpath build/backend `
+            --workpath build/backend_work `
+            --specpath build/backend_spec `
+            --paths . `
+            --noconfirm `
+            scripts/backend_entry.py
+
+      - name: Package Electron app (electron-packager)
+        working-directory: overlay
+        run: npm run pack
+
+      - name: Copy backend exe + config into packaged resources
+        shell: pwsh
+        run: |
+          $dest = "overlay\release\F1-25-Leaderboard-Overlay-win32-x64\resources"
+          Copy-Item "build\backend\f1-leaderboard-backend.exe" "$dest\" -Force
+          Copy-Item "config" "$dest\" -Recurse -Force
+
+      - name: Create ZIP archive
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $env:GITHUB_REF -replace 'refs/tags/', ''
+          } else { 'dev' }
+          $src = "overlay\release\F1-25-Leaderboard-Overlay-win32-x64"
+          $zip = "F1-25-Leaderboard-Overlay-$version-win-x64.zip"
+          Compress-Archive -Path "$src\*" -DestinationPath $zip -CompressionLevel Optimal
+          echo "ZIP_PATH=$zip" >> $env:GITHUB_ENV
+
+      - name: Upload artifact (workflow_dispatch / non-tag)
+        if: startsWith(github.ref, 'refs/tags/') == false
+        uses: actions/upload-artifact@v4
+        with:
+          name: F1-25-Leaderboard-Overlay-win-x64
+          path: ${{ env.ZIP_PATH }}
+
+      - name: Create GitHub Release (tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_PATH }}
+          generate_release_notes: true

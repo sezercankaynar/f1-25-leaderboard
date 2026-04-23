@@ -18,6 +18,12 @@ build/
 node_modules/
 overlay/dist/
 overlay/.vite/
+overlay/release/
+
+# PyInstaller artifacts
+build/backend/
+build/backend_work/
+build/backend_spec/
 
 # İteratif oyun içi ekran görüntüleri (v1..v7 görsel iterasyon döngüsü)
 ingame.png

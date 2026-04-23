@@ -1,4 +1,6 @@
 const { app, BrowserWindow, globalShortcut, screen } = require('electron');
+const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 
 // Windows occlusion hesaplamasını kapat — transparent overlay yanlışlıkla
@@ -8,6 +10,45 @@ app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 const isDev = !app.isPackaged;
 
 let overlayWin = null;
+let backendProcess = null;
+
+function startBackend() {
+  if (isDev) {
+    // Dev modda kullanıcı backend'i kendi terminalinde manuel başlatır
+    return;
+  }
+  const backendPath = path.join(process.resourcesPath, 'f1-leaderboard-backend.exe');
+  if (!fs.existsSync(backendPath)) {
+    console.error('[backend] exe bulunamadı:', backendPath);
+    return;
+  }
+  try {
+    backendProcess = spawn(backendPath, [], {
+      cwd: path.dirname(backendPath),
+      windowsHide: true,
+      stdio: 'ignore',
+      detached: false,
+    });
+    backendProcess.on('error', (err) => console.error('[backend] error:', err));
+    backendProcess.on('exit', (code) => {
+      console.log('[backend] exit code=', code);
+      backendProcess = null;
+    });
+  } catch (err) {
+    console.error('[backend] spawn failed:', err);
+  }
+}
+
+function stopBackend() {
+  if (backendProcess && !backendProcess.killed) {
+    try {
+      backendProcess.kill();
+    } catch (err) {
+      console.error('[backend] kill failed:', err);
+    }
+    backendProcess = null;
+  }
+}
 
 function createOverlay() {
   const primary = screen.getPrimaryDisplay();
@@ -67,6 +108,7 @@ function registerShortcuts() {
 }
 
 app.whenReady().then(() => {
+  startBackend();
   createOverlay();
   registerShortcuts();
   app.on('activate', () => {
@@ -74,8 +116,12 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  stopBackend();
+});
 
 app.on('window-all-closed', () => {
+  stopBackend();
   if (process.platform !== 'darwin') app.quit();
 });
