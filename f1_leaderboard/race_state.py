@@ -69,6 +69,7 @@ class Driver:
     current_lap_s2_ms: int = 0         # bu lap içinde görülen son S2
     sector_status: Tuple[int, int, int] = (0, 0, 0)  # 0=gri / 1=sarı / 2=mor / 3=yeşil
     sector_display_until: float = 0.0  # monotonic timestamp — tur sonu renk persist'i
+    best_lap_ms: int = 0               # sürücünün şu ana kadarki en hızlı tam tur süresi
     _last_seen_lap: int = 0            # tur değişimi tespiti için internal
 
 
@@ -94,6 +95,12 @@ class Snapshot:
     overall_best_s1_ms: int = 0
     overall_best_s2_ms: int = 0
     overall_best_s3_ms: int = 0
+    # Field-wide en iyi tam tur süresi — fastest-lap rozeti için
+    overall_best_lap_ms: int = 0
+
+    # Session header bilgileri (F1 25 Session packet)
+    session_type: int = 0      # 0=unknown, 1-4=P, 5-9/14-15=Q, 10-12=R, 13=TT
+    session_time_left: int = 0 # saniye
 
 
 def _team_abbr(name: str) -> str:
@@ -166,6 +173,8 @@ def _apply_session(state: Snapshot, s: SessionData, player_idx: int) -> Snapshot
             total_laps=s.total_laps,
         ),
         player_car_index=player_idx,
+        session_type=s.session_type,
+        session_time_left=s.session_time_left,
     )
 
 
@@ -196,6 +205,7 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
     ob_s1 = state.overall_best_s1_ms
     ob_s2 = state.overall_best_s2_ms
     ob_s3 = state.overall_best_s3_ms
+    ob_lap = state.overall_best_lap_ms
 
     for i, entry in enumerate(p.entries):
         d = drivers[i]
@@ -212,6 +222,7 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
         cur_s2 = d.current_lap_s2_ms
         status = d.sector_status
         display_until = d.sector_display_until
+        best_lap = d.best_lap_ms
 
         # 1a) Yarış restart — lap GERİ gitti
         if d._last_seen_lap > 0 and new_lap < d._last_seen_lap:
@@ -219,6 +230,7 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
             cur_s1 = cur_s2 = 0
             status = (SECTOR_NONE, SECTOR_NONE, SECTOR_NONE)
             display_until = 0.0
+            best_lap = 0
         # 1b) Normal tur değişimi (ileri) — S3 rengi hesapla, persist başlat
         elif (d._last_seen_lap > 0 and new_lap > d._last_seen_lap
               and last_lap_ms > 0):
@@ -237,6 +249,13 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
             # cur_s1/s2 sıfırla — yeni lap'in s1 completion tespiti için
             cur_s1 = 0
             cur_s2 = 0
+            # Tam tur PB ve field-wide best — current_lap_invalid biten turun
+            # geçerliliğini hâlâ yansıtıyor (sürücü pit-out yapmadıysa)
+            if entry.current_lap_invalid == 0 and entry.pit_status == 0:
+                if best_lap == 0 or last_lap_ms < best_lap:
+                    best_lap = last_lap_ms
+                if ob_lap == 0 or last_lap_ms < ob_lap:
+                    ob_lap = last_lap_ms
 
         # 2) Persist süresi dolduysa temizle (yeni lap'in S1'i henüz gelmediyse)
         if display_until > 0 and now >= display_until:
@@ -287,6 +306,7 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
             current_lap_s2_ms=cur_s2,
             sector_status=status,
             sector_display_until=display_until,
+            best_lap_ms=best_lap,
             _last_seen_lap=new_lap,
         )
 
@@ -297,6 +317,7 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
         overall_best_s1_ms=ob_s1,
         overall_best_s2_ms=ob_s2,
         overall_best_s3_ms=ob_s3,
+        overall_best_lap_ms=ob_lap,
     )
 
 

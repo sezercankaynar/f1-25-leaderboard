@@ -61,11 +61,15 @@ def is_interested(packet_id: int) -> bool:
 
 
 # --- Session (id=1) --------------------------------------------------------
-# İhtiyaç duyulan alanlar paketin en başında, stabil offsetler.
-# @0 weather uint8, @1 trackTemp int8, @2 airTemp int8
-# rainPercentage F1 25 spec'inde mevcut ama offset'i değişken (weather_forecast
-# array'inden sonra). MVP için weather enum'dan fallback kullanılır.
-_SESSION_HEAD = struct.Struct("<BbbB")  # weather, trackTemp, airTemp, totalLaps
+# İhtiyaç duyulan alanlar paketin başında, stabil offsetler.
+# @0  weather              uint8     @1  trackTemp        int8
+# @2  airTemp              int8      @3  totalLaps        uint8
+# @4  trackLength          uint16    @6  sessionType      uint8
+# @7  trackId              int8      @8  formula          uint8
+# @9  sessionTimeLeft      uint16    @11 sessionDuration  uint16
+# rainPercentage offset'i değişken (weather_forecast array'inden sonra) →
+# weather enum fallback kullan.
+_SESSION_HEAD = struct.Struct("<BbbBHBbBHH")  # 13 bayt
 
 
 @dataclass(frozen=True)
@@ -74,16 +78,29 @@ class SessionData:
     track_temperature: int
     air_temperature: int
     total_laps: int
+    session_type: int      # F1 25 enum (0=unknown, 1-4=P, 5-9=Q, 10-12=R, 13=TT)
+    session_time_left: int # saniye, sadece quali/practice'te anlamlı
+    session_duration: int  # saniye, toplam süre
 
 
 def parse_session(body: bytes) -> Optional[SessionData]:
     if len(body) < _SESSION_HEAD.size:
         return None
     try:
-        weather, track_t, air_t, total_laps = _SESSION_HEAD.unpack_from(body, 0)
+        (weather, track_t, air_t, total_laps,
+         _track_len, session_type, _track_id, _formula,
+         time_left, duration) = _SESSION_HEAD.unpack_from(body, 0)
     except struct.error:
         return None
-    return SessionData(weather, track_t, air_t, total_laps)
+    return SessionData(
+        weather=weather,
+        track_temperature=track_t,
+        air_temperature=air_t,
+        total_laps=total_laps,
+        session_type=session_type,
+        session_time_left=time_left,
+        session_duration=duration,
+    )
 
 
 # --- LapData (id=2) --------------------------------------------------------

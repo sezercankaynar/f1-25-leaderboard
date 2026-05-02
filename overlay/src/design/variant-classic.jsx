@@ -1,10 +1,12 @@
 import { memo } from 'react';
 import FlipList from './flip-list.jsx';
+import LeaderboardHeader from './header.jsx';
 import {
   SectorBars,
   TireCompact,
   ErsCompact,
   PositionDelta,
+  FastestLapDot,
   usePositionDeltas,
 } from './atoms.jsx';
 import { TEAMS } from './constants.js';
@@ -61,7 +63,7 @@ function TeamLogo({ teamId }) {
   );
 }
 
-export default function VariantClassic({ drivers, width = 360, density = 'cozy' }) {
+export default function VariantClassic({ drivers, session, width = 360, density = 'cozy' }) {
   const rowH = density === 'compact' ? 26 : 30;
   const fontSize = density === 'compact' ? 13 : 14;
   const deltas = usePositionDeltas(drivers);
@@ -72,10 +74,11 @@ export default function VariantClassic({ drivers, width = 360, density = 'cozy' 
       background: 'rgba(10, 10, 14, 0.92)',
       fontFamily: "'Rajdhani', 'Oswald', sans-serif",
       color: '#ECECEC',
-      borderRadius: '0 0 4px 4px',
+      borderRadius: 4,
       overflow: 'hidden',
-      padding: '4px 0',
     }}>
+      <LeaderboardHeader session={session} tone="classic" />
+      <div style={{ padding: '4px 0' }}>
       <FlipList keyFn={d => d.code} items={drivers}>
         {(d) => {
           const flash = deltas[d.code];
@@ -90,6 +93,7 @@ export default function VariantClassic({ drivers, width = 360, density = 'cozy' 
           );
         }}
       </FlipList>
+      </div>
     </div>
   );
 }
@@ -101,7 +105,7 @@ const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt }
     <div style={{
       height: rowH,
       display: 'grid',
-      gridTemplateColumns: '12px 4px 22px 18px 34px 1fr auto auto auto',
+      gridTemplateColumns: '12px 4px 22px 18px 50px 1fr auto auto auto',
       alignItems: 'center',
       gap: 6,
       padding: '0 8px 0 0',
@@ -123,7 +127,11 @@ const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt }
       <div style={{
         fontSize, fontWeight: 700, letterSpacing: 1.2,
         color: isPlayer ? '#FFF' : '#ECECEC',
-      }}>{d.code}</div>
+        display: 'flex', alignItems: 'center', gap: 4,
+      }}>
+        {d.code}
+        {d.fastestLap && <FastestLapDot size={11} />}
+      </div>
       <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <SectorBars sectors={d.sectors} height={10} width={6} gap={2} />
       </div>

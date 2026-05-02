@@ -8,6 +8,7 @@ export function useSnapshot() {
     connected: false,
     drivers: [],
     playerIdx: -1,
+    session: null,
   });
   const driversMapRef = useRef(new Map());
 
@@ -24,6 +25,7 @@ export function useSnapshot() {
         connected: true,
         drivers: [...map.values()].sort((a, b) => a.pos - b.pos),
         playerIdx: data.playerIdx,
+        session: data.session ?? null,
       });
     }
 
@@ -35,6 +37,7 @@ export function useSnapshot() {
         connected: true,
         drivers: [...map.values()].sort((a, b) => a.pos - b.pos),
         playerIdx: data.playerIdx ?? prev.playerIdx,
+        session: data.session ?? prev.session,
       }));
     }
 
@@ -57,7 +60,7 @@ export function useSnapshot() {
         else if (msg.type === 'diff') applyDiff(msg.data);
         else if (msg.type === 'inactive') {
           driversMapRef.current = new Map();
-          setState({ connected: true, drivers: [], playerIdx: -1 });
+          setState({ connected: true, drivers: [], playerIdx: -1, session: null });
         }
       };
 

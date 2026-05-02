@@ -15,6 +15,30 @@ from typing import Dict, List, Optional
 
 from .race_state import Driver, Snapshot
 
+# F1 25 sessionType enum → header label (Türkçe)
+# F1 25 spec'i F1 24'e göre Sprint Shootout (10-14) varyantlarını ekleyince
+# Race kodu 10 → 15'e kaydı. Bilinmeyen değerler '— — —' fallback'ine düşer.
+_SESSION_TYPE_LABEL: Dict[int, str] = {
+    # Practice
+    1: 'PRATİK', 2: 'PRATİK', 3: 'PRATİK', 4: 'PRATİK',
+    # Qualifying
+    5: 'SIRALAMA', 6: 'SIRALAMA', 7: 'SIRALAMA', 8: 'SIRALAMA', 9: 'SIRALAMA',
+    # Sprint Shootout (F1 25'te eklendi)
+    10: 'SPRINT SIRALAMA', 11: 'SPRINT SIRALAMA', 12: 'SPRINT SIRALAMA',
+    13: 'SPRINT SIRALAMA', 14: 'SPRINT SIRALAMA',
+    # Race (F1 25'te 15'ten başlıyor)
+    15: 'YARIŞ', 16: 'YARIŞ', 17: 'YARIŞ',
+    # Time Trial
+    18: 'TIME TRIAL',
+    # Sprint (F1 25'te bazı versiyonlarda 19 olarak rapor edilir)
+    19: 'SPRINT',
+}
+
+# F1 weather enum → tasarım weather string
+_WEATHER_TO_LABEL: Dict[int, str] = {
+    0: 'dry', 1: 'dry', 2: 'cloudy', 3: 'lightrain', 4: 'heavyrain', 5: 'storm',
+}
+
 TEAM_ID_TO_CODE: Dict[int, str] = {
     0: 'VLK', 1: 'APX', 2: 'TRN', 3: 'NRD', 4: 'VRT',
     5: 'SLC', 6: 'MRD', 7: 'HLX', 8: 'ORB', 9: 'KRN',
@@ -51,9 +75,19 @@ def _sector_status_list(d: Driver) -> List[int]:
     return list(d.sector_status)
 
 
-def _driver_dict(d: Driver, player_idx: int, teams_cfg: Dict[str, dict]) -> dict:
+def _driver_dict(
+    d: Driver,
+    player_idx: int,
+    teams_cfg: Dict[str, dict],
+    overall_best_lap_ms: int,
+) -> dict:
     team_meta = teams_cfg.get(str(d.team_id))
     team_color = team_meta['color'] if team_meta else '#808080'
+    is_fastest = (
+        overall_best_lap_ms > 0
+        and d.best_lap_ms > 0
+        and d.best_lap_ms == overall_best_lap_ms
+    )
     return {
         'idx': d.index,
         'pos': d.position,
@@ -71,12 +105,38 @@ def _driver_dict(d: Driver, player_idx: int, teams_cfg: Dict[str, dict]) -> dict
         'ersMode': ERS_MODE_MAP.get(d.ers_deploy_mode, 'N'),
         'isPlayer': d.index == player_idx,
         'pitStatus': d.pit_status,
+        'fastestLap': is_fastest,
+    }
+
+
+def _format_time_left(seconds: int) -> str:
+    if seconds <= 0:
+        return ''
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    if h > 0:
+        return f'{h}:{m:02d}:{s:02d}'
+    return f'{m}:{s:02d}'
+
+
+def _session_payload(snap: Snapshot) -> dict:
+    pidx = snap.player_car_index
+    player = snap.drivers[pidx] if 0 <= pidx < len(snap.drivers) else None
+    return {
+        'type': _SESSION_TYPE_LABEL.get(snap.session_type, '— — —'),
+        'lap': player.current_lap if player else 0,
+        'totalLaps': snap.weather.total_laps,
+        'timeLeft': _format_time_left(snap.session_time_left),
+        'trackTemp': snap.weather.track_temp_c,
+        'airTemp': snap.weather.air_temp_c,
+        'rainChance': snap.weather.rain_percent,
+        'weather': _WEATHER_TO_LABEL.get(snap.weather.weather_code, 'dry'),
     }
 
 
 def snapshot_to_payload(snap: Snapshot, teams_cfg: Dict[str, dict]) -> dict:
     drivers = [
-        _driver_dict(d, snap.player_car_index, teams_cfg)
+        _driver_dict(d, snap.player_car_index, teams_cfg, snap.overall_best_lap_ms)
         for d in snap.drivers
         if d.position > 0
     ]
@@ -84,6 +144,7 @@ def snapshot_to_payload(snap: Snapshot, teams_cfg: Dict[str, dict]) -> dict:
     return {
         'drivers': drivers,
         'playerIdx': snap.player_car_index,
+        'session': _session_payload(snap),
     }
 
 
@@ -96,10 +157,14 @@ def diff_payloads(prev: dict, curr: dict) -> Optional[dict]:
     player_changed = prev.get('playerIdx') != curr.get('playerIdx')
     removed_idx = [idx for idx in prev_by_idx
                    if idx not in {d['idx'] for d in curr.get('drivers', [])}]
-    if not changed and not player_changed and not removed_idx:
+    session_changed = prev.get('session') != curr.get('session')
+    if not changed and not player_changed and not removed_idx and not session_changed:
         return None
-    return {
+    out: dict = {
         'drivers': changed,
         'removed': removed_idx,
         'playerIdx': curr.get('playerIdx'),
     }
+    if session_changed:
+        out['session'] = curr.get('session')
+    return out

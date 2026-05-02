@@ -110,10 +110,16 @@ def main() -> int:
                 f"ob=({snap.overall_best_s1_ms},{snap.overall_best_s2_ms},{snap.overall_best_s3_ms})"
                 if p else ""
             )
+            sess_info = (
+                f"sess_type={snap.session_type} laps_total={snap.weather.total_laps} "
+                f"time_left={snap.session_time_left}s "
+                f"track={snap.weather.track_temp_c}C air={snap.weather.air_temp_c}C "
+                f"weather_code={snap.weather.weather_code}"
+            )
             log.info(
-                "recv=%d parsed=%d | pos>0=%d named=%d | player[%d] %s | %s",
+                "recv=%d parsed=%d | pos>0=%d named=%d | %s | player[%d] %s | %s",
                 stats["recv"], stats["parsed"],
-                with_pos, with_name, pidx, ers_info, sec_info,
+                with_pos, with_name, sess_info, pidx, ers_info, sec_info,
             )
     except KeyboardInterrupt:
         _shutdown()

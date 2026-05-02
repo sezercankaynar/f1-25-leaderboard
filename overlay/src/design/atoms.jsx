@@ -160,6 +160,28 @@ export function usePositionDeltas(drivers, flashMs = 2200) {
   return flashes;
 }
 
+// Tasarımdan port (variant-minimal): mor gradient daire + içinde stopwatch ikonu.
+// d.fastestLap true olduğunda sürücü kodu yanına render edilir.
+export function FastestLapDot({ size = 11 }) {
+  const purple = '#B93DD6';
+  return (
+    <div style={{
+      width: size, height: size, flexShrink: 0,
+      borderRadius: '50%',
+      background: `radial-gradient(circle at 30% 30%, ${purple} 0%, #6A1F8A 100%)`,
+      boxShadow: `0 0 6px ${purple}cc`,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 10 10">
+        <circle cx="5" cy="5.5" r="3.6" fill="none" stroke="#FFF" strokeWidth="0.9" />
+        <line x1="5" y1="5.5" x2="5" y2="3" stroke="#FFF" strokeWidth="0.9" strokeLinecap="round" />
+        <line x1="5" y1="5.5" x2="6.8" y2="6.5" stroke="#FFF" strokeWidth="0.9" strokeLinecap="round" />
+        <rect x="4" y="0.5" width="2" height="1.2" fill="#FFF" rx="0.3" />
+      </svg>
+    </div>
+  );
+}
+
 export function PositionDelta({ delta, size = 10 }) {
   if (!delta) {
     return <div style={{ width: size + 4, height: size, flexShrink: 0 }} />;
