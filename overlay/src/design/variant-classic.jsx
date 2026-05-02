@@ -63,10 +63,29 @@ function TeamLogo({ teamId }) {
   );
 }
 
-export default function VariantClassic({ drivers, session, width = 360, density = 'cozy' }) {
+// "M:SS.mmm" / "SS.mmm" — F1 broadcast tarzı
+function formatLapTime(ms) {
+  if (!ms || ms <= 0) return '—';
+  const totalSec = ms / 1000;
+  if (totalSec < 60) return totalSec.toFixed(3);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec - m * 60;
+  return `${m}:${s.toFixed(3).padStart(6, '0')}`;
+}
+
+export default function VariantClassic({
+  drivers,
+  session,
+  isPractice = false,
+  inPit = false,
+  width = 360,
+  density = 'cozy',
+}) {
   const rowH = density === 'compact' ? 26 : 30;
   const fontSize = density === 'compact' ? 13 : 14;
   const deltas = usePositionDeltas(drivers);
+  // Antrenman + oyuncu pite girdiyse leaderboard kapanır, sadece header kalır
+  const collapsed = isPractice && inPit;
 
   return (
     <div style={{
@@ -77,30 +96,40 @@ export default function VariantClassic({ drivers, session, width = 360, density 
       borderRadius: 4,
       overflow: 'hidden',
     }}>
-      <LeaderboardHeader session={session} tone="classic" />
-      <div style={{ padding: '4px 0' }}>
-      <FlipList keyFn={d => d.code} items={drivers}>
-        {(d) => {
-          const flash = deltas[d.code];
-          return (
-            <Row
-              driver={d}
-              rowH={rowH}
-              fontSize={fontSize}
-              flashDelta={flash ? flash.delta : 0}
-              flashAt={flash ? flash.at : null}
-            />
-          );
-        }}
-      </FlipList>
-      </div>
+      <LeaderboardHeader session={session} tone="classic" inPit={inPit && isPractice} />
+      {!collapsed && (
+        <div style={{ padding: '4px 0' }}>
+          <FlipList keyFn={d => d.code} items={drivers}>
+            {(d) => {
+              const flash = deltas[d.code];
+              return (
+                <Row
+                  driver={d}
+                  rowH={rowH}
+                  fontSize={fontSize}
+                  flashDelta={flash ? flash.delta : 0}
+                  flashAt={flash ? flash.at : null}
+                  isPractice={isPractice}
+                />
+              );
+            }}
+          </FlipList>
+        </div>
+      )}
     </div>
   );
 }
 
-const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt }) {
+const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt, isPractice }) {
   const teamColor = d.teamColor || TEAMS[d.team]?.color || '#808080';
   const isPlayer = d.isPlayer;
+  // Antrenman: gap yerine canlı tur süresi göster
+  const trailingText = isPractice
+    ? formatLapTime(d.currentLapTimeMs)
+    : (d.gap === 'LEADER' ? 'INTERVAL' : d.gap);
+  const trailingColor = isPractice
+    ? '#ECECEC'
+    : (d.gap === 'LEADER' ? '#F6C416' : '#ECECEC');
   return (
     <div style={{
       height: rowH,
@@ -137,10 +166,10 @@ const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt }
       </div>
       <div style={{
         fontSize: fontSize - 1, fontWeight: 700, letterSpacing: 0.5,
-        color: d.gap === 'LEADER' ? '#F6C416' : '#ECECEC',
+        color: trailingColor,
         fontVariantNumeric: 'tabular-nums',
-        minWidth: 48, textAlign: 'right',
-      }}>{d.gap === 'LEADER' ? 'INTERVAL' : d.gap}</div>
+        minWidth: 56, textAlign: 'right',
+      }}>{trailingText}</div>
       <ErsCompact ers={d.ers} mode={d.ersMode} />
       <TireCompact compound={d.compound} wear={d.wear} laps={d.laps} />
     </div>

@@ -106,6 +106,7 @@ def _driver_dict(
         'isPlayer': d.index == player_idx,
         'pitStatus': d.pit_status,
         'fastestLap': is_fastest,
+        'currentLapTimeMs': d.current_lap_time_ms,
     }
 
 

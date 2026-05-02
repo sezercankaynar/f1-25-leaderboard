@@ -90,13 +90,28 @@ function Divider() {
   return <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.06)', justifySelf: 'center' }} />;
 }
 
-export default function LeaderboardHeader({ session, tone = 'classic' }) {
+export default function LeaderboardHeader({ session, tone = 'classic', inPit = false }) {
   const big = tone === 'bold';
   const minimal = tone === 'minimal';
 
   let lapInfo;
   const t = (session?.type || '').toUpperCase();
-  if (t === 'YARIŞ' || t === 'YARIS' || t === 'RACE') {
+  if (inPit) {
+    // Pit modu: lap/timer yerine kırmızı PİT rozeti
+    lapInfo = (
+      <span style={{
+        fontSize: big ? 13 : 12,
+        fontWeight: 800,
+        letterSpacing: 1.6,
+        color: '#FFFFFF',
+        background: 'rgba(225, 29, 46, 0.85)',
+        padding: '3px 10px',
+        borderRadius: 2,
+        textTransform: 'uppercase',
+        fontFamily: "'Rajdhani', sans-serif",
+      }}>PİT</span>
+    );
+  } else if (t === 'YARIŞ' || t === 'YARIS' || t === 'RACE') {
     lapInfo = (
       <span style={lapStyle(big)}>
         <span style={{ color: '#9AA0A6', fontWeight: 600, fontSize: '0.65em', letterSpacing: 1.4, marginRight: 5 }}>TUR</span>

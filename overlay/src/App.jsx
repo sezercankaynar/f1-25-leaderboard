@@ -21,5 +21,17 @@ export default function App() {
     }
     return null;
   }
-  return <VariantClassic drivers={drivers} session={session} width={305} density="cozy" />;
+  const player = drivers.find(d => d.isPlayer);
+  const isPractice = session?.type === 'PRATİK';
+  const inPit = !!(player && player.pitStatus > 0);
+  return (
+    <VariantClassic
+      drivers={drivers}
+      session={session}
+      isPractice={isPractice}
+      inPit={inPit}
+      width={305}
+      density="cozy"
+    />
+  );
 }

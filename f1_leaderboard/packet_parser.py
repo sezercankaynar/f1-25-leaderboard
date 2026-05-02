@@ -141,6 +141,7 @@ class LapEntry:
     penalties: int         # saniye
     delta_to_car_in_front_ms: int
     last_lap_time_ms: int          # önceki turun toplam süresi (ms)
+    current_lap_time_ms: int       # şu anki turun anlık süresi (ms, canlı sayar)
     sector1_time_ms: int           # bu turun S1 süresi (0 = henüz tamamlanmadı)
     sector2_time_ms: int           # bu turun S2 süresi (0 = henüz tamamlanmadı)
 
@@ -158,7 +159,7 @@ def parse_lap_data(body: bytes) -> Optional[LapDataPacket]:
     try:
         for i in range(NUM_CARS):
             base = i * LAPDATA_PER_CAR
-            (last_lap_ms, _curr_lap_ms,
+            (last_lap_ms, curr_lap_ms,
              s1_ms_part, s1_min, s2_ms_part, s2_min) = _LAPDATA_TIMES.unpack_from(body, base)
             s1_total_ms = s1_min * 60_000 + s1_ms_part
             s2_total_ms = s2_min * 60_000 + s2_ms_part
@@ -169,6 +170,7 @@ def parse_lap_data(body: bytes) -> Optional[LapDataPacket]:
                 *fields,
                 delta_to_car_in_front_ms=delta_total_ms,
                 last_lap_time_ms=last_lap_ms,
+                current_lap_time_ms=curr_lap_ms,
                 sector1_time_ms=s1_total_ms,
                 sector2_time_ms=s2_total_ms,
             ))

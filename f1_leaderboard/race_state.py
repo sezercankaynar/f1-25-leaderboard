@@ -54,6 +54,7 @@ class Driver:
     tyre_wear_max: float = 0.0
 
     current_lap: int = 0
+    current_lap_time_ms: int = 0       # mevcut turda geçen süre (ms, canlı)
     current_sector: int = 0            # 0..2 (F1 25 LapData.sector u8)
     pit_status: int = 0
     num_pit_stops: int = 0
@@ -293,6 +294,7 @@ def _apply_lap_data(state: Snapshot, p: LapDataPacket, player_idx: int) -> Snaps
             d,
             position=entry.car_position,
             current_lap=new_lap,
+            current_lap_time_ms=entry.current_lap_time_ms,
             current_sector=entry.sector,
             pit_status=entry.pit_status,
             num_pit_stops=entry.num_pit_stops,
