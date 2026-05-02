@@ -56,7 +56,10 @@ function createOverlay() {
 
   overlayWin = new BrowserWindow({
     width: 325,
-    height: Math.min(680, sh - 40),
+    // Header (~77px) + 22 sürücü × 30px (cozy) + padding ≈ 745px.
+    // 800 ile 22 araçlı tam kadro + biraz tampon sığar; primary monitör
+    // height-40 cap'i hâlâ koruyor (taşma olmasın).
+    height: Math.min(800, sh - 40),
     x: 40,
     y: 155,
     frame: false,

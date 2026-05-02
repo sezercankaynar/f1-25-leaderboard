@@ -22,13 +22,19 @@ export default function App() {
     return null;
   }
   const player = drivers.find(d => d.isPlayer);
-  const isPractice = session?.type === 'PRATİK';
+  // Yarış-dışı modlar: gap kolonu canlı tur süresine çevrilir, pite girilince
+  // tablo gizlenir. Pratik + sıralama (sprint sıralama dahil) bu kategoride.
+  const lapTimeMode = (
+    session?.type === 'PRATİK'
+    || session?.type === 'SIRALAMA'
+    || session?.type === 'SPRINT SIRALAMA'
+  );
   const inPit = !!(player && player.pitStatus > 0);
   return (
     <VariantClassic
       drivers={drivers}
       session={session}
-      isPractice={isPractice}
+      lapTimeMode={lapTimeMode}
       inPit={inPit}
       width={305}
       density="cozy"

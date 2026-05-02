@@ -76,7 +76,7 @@ function formatLapTime(ms) {
 export default function VariantClassic({
   drivers,
   session,
-  isPractice = false,
+  lapTimeMode = false,
   inPit = false,
   width = 360,
   density = 'cozy',
@@ -84,8 +84,9 @@ export default function VariantClassic({
   const rowH = density === 'compact' ? 26 : 30;
   const fontSize = density === 'compact' ? 13 : 14;
   const deltas = usePositionDeltas(drivers);
-  // Antrenman + oyuncu pite girdiyse leaderboard kapanır, sadece header kalır
-  const collapsed = isPractice && inPit;
+  // Yarış-dışı (pratik/sıralama) + oyuncu pite girdiyse leaderboard kapanır,
+  // sadece header kalır. Yarışta pit gizlenmesi yok.
+  const collapsed = lapTimeMode && inPit;
 
   return (
     <div style={{
@@ -96,7 +97,7 @@ export default function VariantClassic({
       borderRadius: 4,
       overflow: 'hidden',
     }}>
-      <LeaderboardHeader session={session} tone="classic" inPit={inPit && isPractice} />
+      <LeaderboardHeader session={session} tone="classic" inPit={inPit && lapTimeMode} />
       {!collapsed && (
         <div style={{ padding: '4px 0' }}>
           <FlipList keyFn={d => d.code} items={drivers}>
@@ -109,7 +110,7 @@ export default function VariantClassic({
                   fontSize={fontSize}
                   flashDelta={flash ? flash.delta : 0}
                   flashAt={flash ? flash.at : null}
-                  isPractice={isPractice}
+                  lapTimeMode={lapTimeMode}
                 />
               );
             }}
@@ -120,14 +121,14 @@ export default function VariantClassic({
   );
 }
 
-const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt, isPractice }) {
+const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt, lapTimeMode }) {
   const teamColor = d.teamColor || TEAMS[d.team]?.color || '#808080';
   const isPlayer = d.isPlayer;
-  // Antrenman: gap yerine canlı tur süresi göster
-  const trailingText = isPractice
+  // Yarış-dışı modda gap yerine canlı tur süresi
+  const trailingText = lapTimeMode
     ? formatLapTime(d.currentLapTimeMs)
     : (d.gap === 'LEADER' ? 'INTERVAL' : d.gap);
-  const trailingColor = isPractice
+  const trailingColor = lapTimeMode
     ? '#ECECEC'
     : (d.gap === 'LEADER' ? '#F6C416' : '#ECECEC');
   return (
