@@ -81,8 +81,14 @@ def _driver_dict(
     teams_cfg: Dict[str, dict],
     overall_best_lap_ms: int,
 ) -> dict:
-    team_meta = teams_cfg.get(str(d.team_id))
-    team_color = team_meta['color'] if team_meta else '#808080'
+    is_my_team = bool(d.my_team)
+    if is_my_team:
+        # Galatasaray Nef Racing — kullanıcının My Team kariyer takımı.
+        # teams.json'daki team_id eşleşmesi yerine sabit logo + Galatasaray sarı-kırmızı.
+        team_color = '#F5A300'
+    else:
+        team_meta = teams_cfg.get(str(d.team_id))
+        team_color = team_meta['color'] if team_meta else '#808080'
     is_fastest = (
         overall_best_lap_ms > 0
         and d.best_lap_ms > 0
@@ -95,6 +101,7 @@ def _driver_dict(
         'name': d.name,
         'team': TEAM_ID_TO_CODE.get(d.team_id, 'APX'),
         'teamId': d.team_id,
+        'myTeam': is_my_team,
         'teamColor': team_color,
         'sectors': _sector_status_list(d),
         'gap': _format_gap(d.delta_to_ahead_ms, d.position),

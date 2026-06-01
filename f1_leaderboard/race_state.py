@@ -43,6 +43,7 @@ class Driver:
     position: int = 0
     name: str = ""
     team_id: int = 255
+    my_team: int = 0                    # 1 = My Team career mode (özel takım)
     ai_controlled: int = 1
 
     ers_percent: float = 0.0
@@ -332,6 +333,7 @@ def _apply_participants(
             drivers[i],
             name=entry.name,
             team_id=entry.team_id,
+            my_team=entry.my_team,
             ai_controlled=entry.ai_controlled,
         )
     return replace(

@@ -32,7 +32,15 @@ const LOGO_COLOR_BY_TEAM = {
   8: '#FF8700', // McLaren — papaya orange
 };
 
-function TeamLogo({ teamId }) {
+function TeamLogo({ teamId, myTeam }) {
+  // My Team kariyer takımı: backend my_team=1 işaret ediyor. teamId'den bağımsız,
+  // sabit SVG logoyu (Galatasaray Nef Racing — sarı-kırmızı GS) render et.
+  if (myTeam) {
+    return (
+      <img src="./teams/my_team.png" width={18} height={18} alt=""
+        style={{ display: 'block', objectFit: 'contain' }} />
+    );
+  }
   if (teamId == null || !KNOWN_TEAM_IDS.has(teamId)) {
     return <div style={{ width: 18, height: 18 }} />;
   }
@@ -153,7 +161,7 @@ const Row = memo(function Row({ driver: d, rowH, fontSize, flashDelta, flashAt, 
         color: isPlayer ? '#FFF' : '#ECECEC',
         fontVariantNumeric: 'tabular-nums',
       }}>{d.pos}</div>
-      <TeamLogo teamId={d.teamId} />
+      <TeamLogo teamId={d.teamId} myTeam={d.myTeam} />
       <div style={{
         fontSize, fontWeight: 700, letterSpacing: 1.2,
         color: isPlayer ? '#FFF' : '#ECECEC',
